@@ -3,12 +3,13 @@ from sklearn import preprocessing, cluster
 import matplotlib.pyplot as plt
 import seaborn as sns
 from kneed import KneeLocator
+import statsmodels.api as sm
+import os
 
 path = 'C:/Users/User/PycharmProjects/Consumer-Model'
-df = pd.read_csv(f'{path}/data/Mall_Customers.csv')
 
 
-def fno1(dataframe: pd.DataFrame):
+def modification(dataframe: pd.DataFrame):
     df = dataframe
     map_dict = {'Male': 0, 'Female': 1}
     df['Gender'] = df['Gender'].map(map_dict)
@@ -19,18 +20,17 @@ def fno1(dataframe: pd.DataFrame):
               value=[x for x in df['Gender']])
     df.insert(loc=4, column='Annual Income',
               value=[x * 1000 for x in df['Annual Income (k$)']])
-    df = df.drop(['CustomerID', 'Annual Income (k$)'], axis=1)
+    df.insert(loc= list(df.columns).index('Spending Score (1-100)'),
+              column='Spending Score',
+              value=[i for i in df['Spending Score (1-100)']])
+    df = df.drop(['CustomerID', 'Annual Income (k$)', 'Spending Score (1-100)'], axis=1)
     df['Gender'] = df['Gender'].map({map_dict[x]: x for x in map_dict.keys()})
     df.to_csv(f'{path}/data/modified.csv', index=False)
     return df
 
 
-fno1(df)
-df = pd.read_csv(f'{path}/data/modified.csv')
-
-
 def clustering(df: pd.DataFrame, x: 'independent variable', run_counter,
-               y: 'dependant variable' = 'Spending Score (1-100)',
+               y: 'dependant variable' = 'Spending Score',
                c: 'clustering variable' = None):
     sns.set()
 
@@ -55,4 +55,42 @@ def clustering(df: pd.DataFrame, x: 'independent variable', run_counter,
     plt.close()
 
 
-def regression_anal()
+def reg(df: pd.DataFrame, y_data, x_data):
+    y = df[y_data]
+    x = sm.add_constant(df[x_data])
+    model = sm.OLS(y, x).fit()
+    summary = model.summary()
+    print(summary)
+    html = summary.tables[1].as_html()
+    df0 = pd.read_html(html, header=0, index_col=0)[0]
+    x = list(df0['coef'])
+    sign = ['+', '', '+']
+    for i in x:
+        if i < 0:
+            sign[x.index(i)] = ''
+    return f'y={sign[1]}{x[1]}*x{sign[0]}{x[0]}'
+
+
+def call(call_var: int):
+    if call_var == 0:
+        modification(pd.read_csv(f'{path}/data/Mall_Customers.csv'))
+    elif call_var == 1:
+        run = 0
+        for i in 'Annual Income', 'Age':
+            for j in 'Gender', None:
+                run += 1
+                clustering(pd.read_csv(f'{path}/data/modified.csv'), x=i, c=j, run_counter=run)
+    elif call_var == 2:
+        x = ['Male', 'Female', 'Annual Income', 'Age']
+        y = 'Spending Score'
+        reg_lines = [reg(pd.read_csv(f'{path}/data/modified.csv'), y_data=y, x_data=i) for i in x]
+        print(i for i in reg_lines)
+        pd.DataFrame(data={
+                'independent variable (x)': x,
+                'dependent variable (y)': [y] * len(x),
+                'regression lines': reg_lines
+        }).to_csv(f'{path}/outputs/reg_output.csv', index=False)
+
+
+for i in range(3):
+    call(i)

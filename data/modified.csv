@@ -1,4 +1,4 @@
-Gender,Male,Female,Annual Income,Age,Spending Score (1-100)
+Gender,Male,Female,Annual Income,Age,Spending Score
 Male,1,0,15000,19,39
 Male,1,0,15000,21,81
 Female,0,1,16000,20,6
