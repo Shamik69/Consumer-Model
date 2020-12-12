@@ -35,25 +35,29 @@ def clustering(df: pd.DataFrame, x: 'independent variable', run_counter,
     sns.set()
 
     scaled = preprocessing.scale(df[[x, y]])
-    knee= KneeLocator(x=[i + 1 for i in range(10)],
-                      y=[cluster.KMeans(i + 1).fit(scaled).inertia_ for i in range(10)], direction='decreasing').knee
-    print(knee)
-    kmeans = cluster.KMeans(knee)
-    clusters = kmeans.fit_predict(scaled)
-    df['clusters'] = clusters
-    print(df['clusters'].unique().shape[0])
+    if c is None:
+        x_ = [i + 1 for i in range(10)]
+        y_ = [cluster.KMeans(i + 1).fit(scaled).inertia_ for i in range(10)]
+        knee = x_[y_.index(KneeLocator(x=y_, y=x_, direction='decreasing').knee) - 1]
+        plt.plot(x_, y_)
+        plt.vlines(x=knee, ymin=min(y_), ymax=max(y_))
+        plt.show()
+        kmeans = cluster.KMeans(knee)
+        clusters = kmeans.fit_predict(scaled)
+        df[f'{x} clusters'] = clusters
+    c_var = f'{x} clusters' if c is None else c
     df.to_csv(f'{path}/data/modified.csv', index=False)
-    c_var = 'clusters' if c is None else c
     sns.scatterplot(x=x, y=y, hue=c_var,
                     data=df, legend="full")
     plt.xlabel(x)
     plt.ylabel('Spending')
-    plt.savefig(f'{path}/figs/fig{run_counter}({x}-{y}-{c}).jpeg')
+    plt.show()
+    plt.savefig(f'{path}/figs/fig{run_counter}({x}-{y}-{x if c is None else c}).jpeg')
     plt.close()
 
 
-run = 0
-for i in 'Age', 'Annual Income':
+run= 0
+for i in 'Annual Income', 'Age':
     for j in 'Gender', None:
-        run += 1
+        run+= 1
         clustering(df=df, x=i, c=j, run_counter=run)
