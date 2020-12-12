@@ -46,7 +46,6 @@ def clustering(df: pd.DataFrame, x: 'independent variable', run_counter,
         clusters = kmeans.fit_predict(scaled)
         df[f'{x} clusters'] = clusters
     c_var = f'{x} clusters' if c is None else c
-    df.to_csv(f'{path}/data/modified.csv', index=False)
     sns.scatterplot(x=x, y=y, hue=c_var,
                     data=df, legend="full")
     plt.xlabel(x)
@@ -56,8 +55,4 @@ def clustering(df: pd.DataFrame, x: 'independent variable', run_counter,
     plt.close()
 
 
-run= 0
-for i in 'Annual Income', 'Age':
-    for j in 'Gender', None:
-        run+= 1
-        clustering(df=df, x=i, c=j, run_counter=run)
+def regression_anal()
