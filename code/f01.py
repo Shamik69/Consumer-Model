@@ -1,12 +1,15 @@
-import pandas as pd
-from sklearn import preprocessing, cluster
+import time
+
 import matplotlib.pyplot as plt
+import pandas as pd
 import seaborn as sns
-from kneed import KneeLocator
 import statsmodels.api as sm
-import os
+from kneed import KneeLocator
+from sklearn import preprocessing, cluster
 
 path = 'C:/Users/User/PycharmProjects/Consumer-Model'
+t0 = time.time()
+sns.set()
 
 
 def modification(dataframe: pd.DataFrame):
@@ -38,11 +41,11 @@ def demography(df: pd.DataFrame, y: str, x='Gender'):
         plt.bar(x=data[x], height=data[i], data=data)
         plt.xlabel(x)
         plt.ylabel(i)
-        plt.savefig(f'{path}/figs/(demography {y}- {i}).jpeg')
+        plt.savefig(f'{path}/figs/demography {y}- {i}.jpeg')
         plt.close()
 
 
-def clustering(df: pd.DataFrame, x: 'independent variable', run_counter=0,
+def clustering(df: pd.DataFrame, x: 'independent variable',
                y: 'dependant variable' = 'Spending Score',
                c: 'clustering variable' = None,
                return_clusters: bool = False):
@@ -62,7 +65,7 @@ def clustering(df: pd.DataFrame, x: 'independent variable', run_counter=0,
                         data=df, legend="full")
         plt.xlabel(x)
         plt.ylabel('Spending')
-        plt.savefig(f'{path}/figs/fig{run_counter}({x}-{y}-{x if c is None else c}).jpeg')
+        plt.savefig(f'{path}/figs/{x}-{y}-{x if c is None else c} clustered.jpeg')
         plt.close()
     else:
         try:
@@ -77,7 +80,6 @@ def reg(df: pd.DataFrame, y, x,
     x = sm.add_constant(df[x])
     model = sm.OLS(y, x).fit()
     summary = model.summary()
-    print(summary)
     html = summary.tables[1].as_html()
     df0 = pd.read_html(html, header=0, index_col=0)[0]
     x = list(df0['coef'])
@@ -91,7 +93,7 @@ def reg(df: pd.DataFrame, y, x,
         return {'var': x[1], 'constant': x[0]}
 
 
-def plot(df: pd.DataFrame, run_counter, x: 'independent variable',
+def plot(df: pd.DataFrame, x: 'independent variable',
          y: 'dependant variable' = 'Spending Score'):
     clusters = clustering(df, x=x, y=y, return_clusters=True)
     coefs = reg(df, x=x, y=y, return_coefs=True)
@@ -102,7 +104,20 @@ def plot(df: pd.DataFrame, run_counter, x: 'independent variable',
     plt.plot(x_, [float(coefs['var']) * i + float(coefs['constant']) for i in x_])
     plt.xlabel(x)
     plt.ylabel('Spending')
-    plt.savefig(f'{path}/figs/fig{run_counter}({x}-{y}-{x} with reg line).jpeg')
+    plt.savefig(f'{path}/figs/{x}-{y} {x} clustered with reg line.jpeg')
+    plt.close()
+
+    plt.scatter(df[x], df[y])
+    plt.plot(x_, [float(coefs['var']) * i + float(coefs['constant']) for i in x_])
+    plt.xlabel(x)
+    plt.ylabel('Spending')
+    plt.savefig(f'{path}/figs/{x}-{y} unclustered with reg line.jpeg')
+    plt.close()
+
+    plt.scatter(df[x], df[y])
+    plt.xlabel(x)
+    plt.ylabel('Spending')
+    plt.savefig(f'{path}/figs/{x}-{y} unclustered.jpeg')
     plt.close()
 
 
@@ -114,7 +129,7 @@ def call(call_var: int):
         for i in 'Annual Income', 'Age':
             for j in 'Gender', None:
                 run += 1
-                clustering(pd.read_csv(f'{path}/data/modified.csv'), x=i, c=j, run_counter=run)
+                clustering(pd.read_csv(f'{path}/data/modified.csv'), x=i, c=j)
     elif call_var == 2:
         x = ['Male', 'Female', 'Annual Income', 'Age']
         y = 'Spending Score'
@@ -129,12 +144,14 @@ def call(call_var: int):
         df = pd.read_csv(f'{path}/data/modified.csv')
         x = ['Annual Income', 'Age']
         y = 'Spending Score'
-        bipasa = 0
         for i in x:
-            plot(df=df, x=i, y=y, run_counter=bipasa)
+            plot(df=df, x=i, y=y)
     elif call_var == 4:
         df = pd.read_csv(f'{path}/data/modified.csv')
         for i in df.columns[3:]:
-            demography(df, y= i)
+            demography(df, y=i)
 
-call(4)
+
+for i in range(5):
+    call(i)
+print(time.time() - t0)
