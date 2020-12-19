@@ -29,6 +29,19 @@ def modification(dataframe: pd.DataFrame):
     return df
 
 
+def demography(df: pd.DataFrame, y: str, x='Gender'):
+    data = pd.DataFrame(data=[(i, df[df['Gender'] == i][y].mean(),
+                               df[df['Gender'] == i][y].var(),
+                               df[df['Gender'] == i][y].shape[0]) for i in ['Male', 'Female']],
+                        columns=['Gender', f'Average {y}', f'Variance in {y}', 'Population'])
+    for i in data.columns[1:]:
+        plt.bar(x=data[x], height=data[i], data=data)
+        plt.xlabel(x)
+        plt.ylabel(i)
+        plt.savefig(f'{path}/figs/(demography {y}- {i}).jpeg')
+        plt.close()
+
+
 def clustering(df: pd.DataFrame, x: 'independent variable', run_counter=0,
                y: 'dependant variable' = 'Spending Score',
                c: 'clustering variable' = None,
@@ -85,7 +98,7 @@ def plot(df: pd.DataFrame, run_counter, x: 'independent variable',
     df['c'] = clusters
     sns.scatterplot(x=x, y=y, hue='c',
                     data=df, legend="full")
-    x_ = range(min(df[x]), max(df[x])+1)
+    x_ = range(min(df[x]), max(df[x]) + 1)
     plt.plot(x_, [float(coefs['var']) * i + float(coefs['constant']) for i in x_])
     plt.xlabel(x)
     plt.ylabel('Spending')
@@ -112,14 +125,16 @@ def call(call_var: int):
                 'dependent variable (y)': [y] * len(x),
                 'regression lines': reg_lines
         }).to_csv(f'{path}/outputs/reg_output.csv', index=False)
-    elif call_var==3:
+    elif call_var == 3:
         df = pd.read_csv(f'{path}/data/modified.csv')
         x = ['Annual Income', 'Age']
         y = 'Spending Score'
         bipasa = 0
         for i in x:
             plot(df=df, x=i, y=y, run_counter=bipasa)
+    elif call_var == 4:
+        df = pd.read_csv(f'{path}/data/modified.csv')
+        for i in df.columns[3:]:
+            demography(df, y= i)
 
-
-for i in range(4):
-    call(i)
+call(4)
