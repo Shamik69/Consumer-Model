@@ -1,5 +1,5 @@
 independent variable (x),dependent variable (y),regression lines
 Male,Spending Score,y=-3.0154*x+51.5268
 Female,Spending Score,y=3.0154*x+48.5114
-Annual Income,Spending Score,y=9.736e-06*x+49.6104
+Annual Income,Spending Score,y=0.0097*x+49.6104
 Age,Spending Score,y=-0.6049*x+73.7012

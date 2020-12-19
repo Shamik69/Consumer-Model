@@ -19,8 +19,8 @@ def modification(dataframe: pd.DataFrame):
     df.insert(loc=3, column='Female',
               value=[x for x in df['Gender']])
     df.insert(loc=4, column='Annual Income',
-              value=[x * 1000 for x in df['Annual Income (k$)']])
-    df.insert(loc= list(df.columns).index('Spending Score (1-100)'),
+              value=[x for x in df['Annual Income (k$)']])
+    df.insert(loc=list(df.columns).index('Spending Score (1-100)'),
               column='Spending Score',
               value=[i for i in df['Spending Score (1-100)']])
     df = df.drop(['CustomerID', 'Annual Income (k$)', 'Spending Score (1-100)'], axis=1)
@@ -29,9 +29,10 @@ def modification(dataframe: pd.DataFrame):
     return df
 
 
-def clustering(df: pd.DataFrame, x: 'independent variable', run_counter,
+def clustering(df: pd.DataFrame, x: 'independent variable', run_counter=0,
                y: 'dependant variable' = 'Spending Score',
-               c: 'clustering variable' = None):
+               c: 'clustering variable' = None,
+               return_clusters: bool = False):
     sns.set()
 
     scaled = preprocessing.scale(df[[x, y]])
@@ -39,25 +40,28 @@ def clustering(df: pd.DataFrame, x: 'independent variable', run_counter,
         x_ = [i + 1 for i in range(10)]
         y_ = [cluster.KMeans(i + 1).fit(scaled).inertia_ for i in range(10)]
         knee = x_[y_.index(KneeLocator(x=y_, y=x_, direction='decreasing').knee) - 1]
-        plt.plot(x_, y_)
-        plt.vlines(x=knee, ymin=min(y_), ymax=max(y_))
-        plt.show()
         kmeans = cluster.KMeans(knee)
         clusters = kmeans.fit_predict(scaled)
         df[f'{x} clusters'] = clusters
     c_var = f'{x} clusters' if c is None else c
-    sns.scatterplot(x=x, y=y, hue=c_var,
-                    data=df, legend="full")
-    plt.xlabel(x)
-    plt.ylabel('Spending')
-    plt.show()
-    plt.savefig(f'{path}/figs/fig{run_counter}({x}-{y}-{x if c is None else c}).jpeg')
-    plt.close()
+    if not return_clusters:
+        sns.scatterplot(x=x, y=y, hue=c_var,
+                        data=df, legend="full")
+        plt.xlabel(x)
+        plt.ylabel('Spending')
+        plt.savefig(f'{path}/figs/fig{run_counter}({x}-{y}-{x if c is None else c}).jpeg')
+        plt.close()
+    else:
+        try:
+            return clusters
+        except:
+            pass
 
 
-def reg(df: pd.DataFrame, y_data, x_data):
-    y = df[y_data]
-    x = sm.add_constant(df[x_data])
+def reg(df: pd.DataFrame, y, x,
+        return_coefs: bool = False):
+    y = df[y]
+    x = sm.add_constant(df[x])
     model = sm.OLS(y, x).fit()
     summary = model.summary()
     print(summary)
@@ -68,7 +72,25 @@ def reg(df: pd.DataFrame, y_data, x_data):
     for i in x:
         if i < 0:
             sign[x.index(i)] = ''
-    return f'y={sign[1]}{x[1]}*x{sign[0]}{x[0]}'
+    if not return_coefs:
+        return f'y={sign[1]}{x[1]}*x{sign[0]}{x[0]}'
+    else:
+        return {'var': x[1], 'constant': x[0]}
+
+
+def plot(df: pd.DataFrame, run_counter, x: 'independent variable',
+         y: 'dependant variable' = 'Spending Score'):
+    clusters = clustering(df, x=x, y=y, return_clusters=True)
+    coefs = reg(df, x=x, y=y, return_coefs=True)
+    df['c'] = clusters
+    sns.scatterplot(x=x, y=y, hue='c',
+                    data=df, legend="full")
+    x_ = range(min(df[x]), max(df[x])+1)
+    plt.plot(x_, [float(coefs['var']) * i + float(coefs['constant']) for i in x_])
+    plt.xlabel(x)
+    plt.ylabel('Spending')
+    plt.savefig(f'{path}/figs/fig{run_counter}({x}-{y}-{x} with reg line).jpeg')
+    plt.close()
 
 
 def call(call_var: int):
@@ -83,14 +105,21 @@ def call(call_var: int):
     elif call_var == 2:
         x = ['Male', 'Female', 'Annual Income', 'Age']
         y = 'Spending Score'
-        reg_lines = [reg(pd.read_csv(f'{path}/data/modified.csv'), y_data=y, x_data=i) for i in x]
+        reg_lines = [reg(pd.read_csv(f'{path}/data/modified.csv'), y=y, x=i) for i in x]
         print(i for i in reg_lines)
         pd.DataFrame(data={
                 'independent variable (x)': x,
                 'dependent variable (y)': [y] * len(x),
                 'regression lines': reg_lines
         }).to_csv(f'{path}/outputs/reg_output.csv', index=False)
+    elif call_var==3:
+        df = pd.read_csv(f'{path}/data/modified.csv')
+        x = ['Annual Income', 'Age']
+        y = 'Spending Score'
+        bipasa = 0
+        for i in x:
+            plot(df=df, x=i, y=y, run_counter=bipasa)
 
 
-for i in range(3):
+for i in range(4):
     call(i)
